@@ -9,6 +9,6 @@
         <parameter value="utf8" />
       </parameters>
     </profile>
-    <profile name="SBT 2" modules="task1-project,task2-project" />
+    <profile name="SBT 2" modules="task2-project,task1-project,task3-project" />
   </component>
 </project>
