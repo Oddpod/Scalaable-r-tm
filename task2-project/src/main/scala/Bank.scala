@@ -13,6 +13,7 @@ class Bank(val allowedAttempts: Integer = 3) {
   def addTransactionToQueue(from: Account, to: Account, amount: Double): Unit = {
     transactionsQueue push new Transaction(
       transactionsQueue, processedTransactions, from, to, amount, allowedAttempts)
+    executorContext.submit(new Runnable {override def run(): Unit = { processTransactions}})
   }
 
   def generateAccountId: Int = {
@@ -20,7 +21,10 @@ class Bank(val allowedAttempts: Integer = 3) {
   }
 
   private def processTransactions: Unit = {
-    transactionsQueue.pop
+    val transaction = transactionsQueue.pop
+    executorContext.submit(transaction)
+    Thread.sleep(30);
+    executorContext.submit(new Runnable {override def run(): Unit = {processTransactions}})
   }
 
   def addAccount(initialBalance: Double): Account = {
@@ -28,6 +32,7 @@ class Bank(val allowedAttempts: Integer = 3) {
   }
 
   def getProcessedTransactionsAsList: List[Transaction] = {
+    println(processedTransactions.size)
     processedTransactions.iterator.toList
   }
 
