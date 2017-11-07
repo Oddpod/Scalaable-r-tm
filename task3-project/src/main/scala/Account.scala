@@ -32,9 +32,22 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
     ???
   }
 
-  def withdraw(amount: Double): Unit = ??? // Like in part 2
-  def deposit(amount: Double): Unit = ??? // Like in part 2
-  def getBalanceAmount: Double = ??? // Like in part 2
+  def withdraw(amount: Double): Unit = this.synchronized {
+    if(amount > getBalanceAmount) {
+      throw new NoSufficientFundsException()
+    }  else if (amount < 0) {
+      throw new IllegalAmountException("Only positive numbers")
+    } else {
+      balance.amount -= amount
+    }
+  }
+  def deposit(amount: Double): Unit = this.synchronized {
+    if(amount < 0) {
+      throw new IllegalAmountException("It's a deposit, not a withdrawal");
+    }
+    balance.amount += amount
+  }
+  def getBalanceAmount: Double = balance.amount
 
   def sendTransactionToBank(t: Transaction): Unit = {
     // Should send a message containing t to the bank of this account

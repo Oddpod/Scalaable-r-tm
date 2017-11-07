@@ -16,32 +16,32 @@ class Bank(val bankId: String) extends Actor {
   val accountCounter = new AtomicInteger(1000)
 
   def createAccount(initialBalance: Double): ActorRef = {
-    // Should create a new Account Actor and return its actor reference. Accounts should be assigned with unique ids (increment with 1).
-    ???
+    // Should create a new Account Actor and return its actor reference. Accounts should be assigned with unique ids (increment with 1)
+    val accountIdString = accountCounter.incrementAndGet().toString
+    BankManager.createAccount(accountIdString, bankId, initialBalance)
   }
 
   def findAccount(accountId: String): Option[ActorRef] = {
     // Use BankManager to look up an account with ID accountId
-    ???
+    Option(BankManager.findAccount(bankId, accountId))
   }
 
   def findOtherBank(bankId: String): Option[ActorRef] = {
     // Use BankManager to look up a different bank with ID bankId
-    ???
+    Option(BankManager.findBank(bankId))
   }
 
   override def receive = {
-    case CreateAccountRequest(initialBalance) => ??? // Create a new account
-    case GetAccountRequest(id) => ??? // Return account
+    case CreateAccountRequest(initialBalance) => createAccount(initialBalance)// Create a new account
+    case GetAccountRequest(id) => findAccount(id) // Return account
     case IdentifyActor => sender ! this
     case t: Transaction => processTransaction(t)
 
     case t: TransactionRequestReceipt => {
       // Forward receipt
-      ???
     }
 
-    case msg => ???
+    case msg => print("this is a message: " + msg)
   }
 
   def processTransaction(t: Transaction): Unit = {
