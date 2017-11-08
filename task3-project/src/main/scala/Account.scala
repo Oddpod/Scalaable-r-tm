@@ -63,7 +63,6 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
       try {
         withdraw(amount)
         sendTransactionToBank(t)
-
       } catch {
         case _: NoSufficientFundsException | _: IllegalAmountException =>
           t.status = TransactionStatus.FAILED
@@ -87,14 +86,22 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
     case TransactionRequestReceipt(to, transactionId, transaction) => {
       // Process receipt
-      print(to + transactionId + transaction)
+      print(to, transactionId, transaction)
     }
 
-    case BalanceRequest => ??? // Should return current balance
+    case BalanceRequest => {
+      this.balance
+    }
 
     case t: Transaction => {
       // Handle incoming transaction
-      reserveTransaction(t)
+      //reserveTransaction(t)
+      if(t.to == accountId){
+        deposit(t.amount)
+      }
+      else if(t.from == accountId){
+        withdraw(t.amount)
+      }
     }
 
     case msg => print(msg)
