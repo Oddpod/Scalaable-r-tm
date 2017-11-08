@@ -29,30 +29,33 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
   def allTransactionsCompleted: Boolean = {
     // Should return whether all Transaction-objects in transactions are completed
-    transactions.values.forall(_.isCompleted)
+    transactions.values.exists(!_.isCompleted)
     true
   }
 
-  def withdraw(amount: Double): Unit = this.synchronized {
+  def withdraw(amount: Double): Unit = {
     if(amount > getBalanceAmount) {
       throw new NoSufficientFundsException()
     }  else if (amount < 0) {
       throw new IllegalAmountException("Only positive numbers")
     } else {
-      balance.amount -= amount
+      this.synchronized {
+      this.balance.amount -= amount }
     }
   }
-  def deposit(amount: Double): Unit = this.synchronized {
+  def deposit(amount: Double): Unit = {
     if(amount < 0) {
       throw new IllegalAmountException("It's a deposit, not a withdrawal");
+    } else
+    this.synchronized {
+      this.balance.amount += amount
     }
-    balance.amount += amount
   }
   def getBalanceAmount: Double = balance.amount
 
   def sendTransactionToBank(t: Transaction): Unit = {
     // Should send a message containing t to the bank of this account
-    BankManager.findBank(bankId).forward(t)
+    BankManager.findBank(bankId) ! t
   }
 
   def transferTo(accountNumber: String, amount: Double): Transaction = {
@@ -66,7 +69,7 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
       } catch {
         case _: NoSufficientFundsException | _: IllegalAmountException =>
           t.status = TransactionStatus.FAILED
-      }
+        }
     }
 
     t
@@ -85,23 +88,30 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
     case IdentifyActor => sender ! this
 
     case TransactionRequestReceipt(to, transactionId, transaction) => {
-      // Process receipt
-      print(to, transactionId, transaction)
+      if(transactions.contains(transactionId)) {
+        var trans = transactions.get(transactionId).get
+        trans.receiptReceived = true
+        trans.status = transaction.status
+
+        if (!transaction.isSuccessful) {
+          this.deposit(transaction.amount)
+        }
+      }
     }
 
-    case BalanceRequest => {
-      this.balance
-    }
+    case BalanceRequest => sender ! getBalanceAmount
+
+
 
     case t: Transaction => {
       // Handle incoming transaction
       //reserveTransaction(t)
-      if(t.to == accountId){
-        deposit(t.amount)
+      try {
+        this.deposit(t.amount)
+      } catch { case _ : IllegalAmountException =>
+        t.status = TransactionStatus.FAILED
       }
-      else if(t.from == accountId){
-        withdraw(t.amount)
-      }
+      sender ! TransactionRequestReceipt(t.from,t.id, t)
     }
 
     case msg => print(msg)
