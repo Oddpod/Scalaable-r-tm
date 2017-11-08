@@ -24,7 +24,7 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
   def getTransactions: List[Transaction] = {
     // Should return a list of all Transaction-objects stored in transactions
-    ???
+   }
   }
 
   def allTransactionsCompleted: Boolean = {
@@ -51,7 +51,7 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
   def sendTransactionToBank(t: Transaction): Unit = {
     // Should send a message containing t to the bank of this account
-    ???
+    BankManager.findBank(this.bankId).forward(t)
   }
 
   def transferTo(accountNumber: String, amount: Double): Transaction = {
@@ -62,7 +62,6 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
       try {
         withdraw(amount)
         sendTransactionToBank(t)
-
       } catch {
         case _: NoSufficientFundsException | _: IllegalAmountException =>
           t.status = TransactionStatus.FAILED
@@ -86,14 +85,22 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
     case TransactionRequestReceipt(to, transactionId, transaction) => {
       // Process receipt
-      ???
+      print(to, transactionId, transaction)
     }
 
-    case BalanceRequest => ??? // Should return current balance
+    case BalanceRequest => {
+      this.balance
+    }
 
     case t: Transaction => {
       // Handle incoming transaction
-      ???
+      //reserveTransaction(t)
+      if(t.to == accountId){
+        deposit(t.amount)
+      }
+      else if(t.from == accountId){
+        withdraw(t.amount)
+      }
     }
 
     case msg => ???
