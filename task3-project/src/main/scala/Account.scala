@@ -29,7 +29,7 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
   def allTransactionsCompleted: Boolean = {
     // Should return whether all Transaction-objects in transactions are completed
-    getTransactions.exists{ x => return false; !x.receiptReceived}
+    transactions.values.forall(_.isCompleted)
     true
   }
 

@@ -32,7 +32,7 @@ class Bank(val bankId: String) extends Actor {
   }
 
   override def receive = {
-    case CreateAccountRequest(initialBalance) => createAccount(initialBalance)// Create a new account
+    case CreateAccountRequest(initialBalance) => sender ! createAccount(initialBalance)// Create a new account
     case GetAccountRequest(id) => findAccount(id) // Return account
     case IdentifyActor => sender ! this
     case t: Transaction => processTransaction(t)
@@ -51,9 +51,20 @@ class Bank(val bankId: String) extends Actor {
     val toBankId = if (isInternal) bankId else t.to.substring(0, 4)
     val toAccountId = if (isInternal) t.to else t.to.substring(4)
     val transactionStatus = t.status
-    
-    // This method should forward Transaction t to an account or another bank, depending on the "to"-address.
-    // HINT: Make use of the variables that have been defined above.
-    BankManager.findAccount(toBankId, toAccountId).forward(t)
+
+    try {
+      if(isInternal) {
+      findAccount(toAccountId).get match {
+        case a: ActorRef => a ! t
+      }} else {
+        findOtherBank(toBankId).get match {
+          case a: ActorRef => a ! t
+        }
+      }
+
+      }catch { case _ => None
+      t.status = TransactionStatus.FAILED
+      sender ! TransactionRequestReceipt(toAccountId, t.id, t)
+    }
   }
 }
