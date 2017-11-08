@@ -34,23 +34,21 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
   }
 
   def withdraw(amount: Double): Unit = {
-    if(amount > getBalanceAmount) {
-      throw new NoSufficientFundsException()
-    }  else if (amount < 0) {
-      throw new IllegalAmountException("Only positive numbers")
-    } else {
+    if(amount > getBalanceAmount) throw new NoSufficientFundsException()
+    else if (amount < 0) throw new IllegalAmountException("Only positive numbers")
+    else
       this.synchronized {
       this.balance.amount -= amount }
-    }
   }
+
   def deposit(amount: Double): Unit = {
-    if(amount < 0) {
-      throw new IllegalAmountException("It's a deposit, not a withdrawal");
-    } else
-    this.synchronized {
+    if(amount < 0) throw new IllegalAmountException("It's a deposit, not a withdrawal")
+    else
+      this.synchronized {
       this.balance.amount += amount
     }
   }
+
   def getBalanceAmount: Double = balance.amount
 
   def sendTransactionToBank(t: Transaction): Unit = {
@@ -89,7 +87,7 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
     case TransactionRequestReceipt(to, transactionId, transaction) => {
       if(transactions.contains(transactionId)) {
-        var trans = transactions.get(transactionId).get
+        val trans = transactions(transactionId)
         trans.receiptReceived = true
         trans.status = transaction.status
 
@@ -101,18 +99,15 @@ class Account(val accountId: String, val bankId: String, val initialBalance: Dou
 
     case BalanceRequest => sender ! getBalanceAmount
 
-
-
-    case t: Transaction => {
+    case t: Transaction =>
       // Handle incoming transaction
-      //reserveTransaction(t)
       try {
         this.deposit(t.amount)
+        t.status = TransactionStatus.SUCCESS
       } catch { case _ : IllegalAmountException =>
         t.status = TransactionStatus.FAILED
       }
       sender ! TransactionRequestReceipt(t.from,t.id, t)
-    }
 
     case msg => print(msg)
   }

@@ -37,11 +37,7 @@ class Bank(val bankId: String) extends Actor {
     case IdentifyActor => sender ! this
     case t: Transaction => processTransaction(t)
 
-    case t: TransactionRequestReceipt => {
-      var isInternal = t.toAccountNumber.length <= 4
-      val toBankId = if (isInternal) bankId else t.toAccountNumber.substring(0, 4)
-      val toAccountId = if (isInternal) t.toAccountNumber else t.toAccountNumber.substring(4)
-    }
+    case t: TransactionRequestReceipt => print(s"${t.transaction.status}!, Thank you, come again!\n" )
 
     case msg => print("this is a message: " + msg)
   }
@@ -52,6 +48,7 @@ class Bank(val bankId: String) extends Actor {
     val toBankId = if (isInternal) bankId else t.to.substring(0, 4)
     val toAccountId = if (isInternal) t.to else t.to.substring(4)
     val transactionStatus = t.status
+
       if(toBankId == bankId) {
         isInternal = true
       }
@@ -69,8 +66,8 @@ class Bank(val bankId: String) extends Actor {
       }
 
       }catch { case _ => None
-      t.status = TransactionStatus.FAILED
-      sender ! TransactionRequestReceipt(toAccountId, t.id, t)
+        t.status = TransactionStatus.FAILED
+        sender ! TransactionRequestReceipt(toAccountId, t.id, t)
 
     }
   }
